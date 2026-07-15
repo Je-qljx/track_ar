@@ -1,6 +1,8 @@
 # TrackAR
 
-*Real-time AR overlay system for track & field video broadcasting*
+*Real-time AR overlay system for track & field video broadcasting* | *田径赛道实时 AR 增强现实叠加系统*
+
+TrackAR 是一款面向田径赛事视频转播的计算机视觉系统，为 **100米直道** 和 **IAAF 标准400米椭圆形跑道** 比赛提供实时 AR 叠加。支持标定靶模式（适配长焦镜头）、实时摄像机跟踪（平移/俯仰/变焦/推拉/升降）、遮挡安全的图形放置以及屏幕排行榜显示。
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue?style=flat-square&logo=python)](https://python.org)
 [![OpenCV](https://img.shields.io/badge/OpenCV-5.0-5c3c8c?style=flat-square&logo=opencv)](https://opencv.org)
