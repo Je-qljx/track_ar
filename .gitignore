@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Notebooks
+*.ipynb
+
+# Model weights (large files)
+*.pt
+
+# Media files (large)
+*.mp4
+*.avi
+*.mov
+*.mkv
+
+# Generated outputs
+output/
+*.png
+*.jpg
+*.jpeg
+
+# Environment
+.env
+venv/
+.venv/
