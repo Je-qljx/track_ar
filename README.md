@@ -1,8 +1,6 @@
 # TrackAR
 
-*Real-time AR overlay system for track & field video broadcasting* | *田径赛道实时 AR 增强现实叠加系统*
 
-TrackAR 是一款面向田径赛事视频转播的计算机视觉系统，为 **100米直道** 和 **IAAF 标准400米椭圆形跑道** 比赛提供实时 AR 叠加。支持标定靶模式（适配长焦镜头）、实时摄像机跟踪（平移/俯仰/变焦/推拉/升降）、遮挡安全的图形放置以及屏幕排行榜显示。
 
 [![Python](https://img.shields.io/badge/Python-3.12-blue?style=flat-square&logo=python)](https://python.org)
 [![OpenCV](https://img.shields.io/badge/OpenCV-5.0-5c3c8c?style=flat-square&logo=opencv)](https://opencv.org)
@@ -80,6 +78,7 @@ python trackar_gui.py
 ```
 
 The GUI provides:
+
 - Video file browser with track type selection (100m / 400m)
 - Camera focal length slider
 - Standard 4-point calibration or calibration target mode (set width, height, distance mark, lane)
@@ -103,14 +102,14 @@ python demo.py --track 400m
 
 Keyboard controls during demo:
 
-| Key | Action |
-|-----|--------|
-| `Space` | Pause / resume |
-| `B` | Toggle detection bounding boxes |
-| `O` | Toggle AR overlay |
-| `F` | Toggle follow-mode camera |
-| `R` | Reset race |
-| `Q` | Quit |
+| Key     | Action                          |
+| ------- | ------------------------------- |
+| `Space` | Pause / resume                  |
+| `B`     | Toggle detection bounding boxes |
+| `O`     | Toggle AR overlay               |
+| `F`     | Toggle follow-mode camera       |
+| `R`     | Reset race                      |
+| `Q`     | Quit                            |
 
 ### Real Video Processing
 
@@ -131,14 +130,14 @@ python tests/self_test.py
 
 Test suite: **35/35 passing**
 
-| Category | Count | Description |
-|----------|-------|-------------|
-| Quick calibration checks | 13 | Standard/target calibration at various positions, sizes, and camera angles for both 100m and 400m |
-| Full-race static | 10 | Complete races with static camera (standard + target + side view) |
-| Full-race pan | 4 | Panning camera during race (standard + target, 100m + 400m) |
-| Full-race 400m zoom | 2 | Zoom during 400m race |
-| Full-race boom | 2 | Boom up/down during 100m race |
-| Full-race zoom/dolly | 4 | Zoom and dolly during 100m race |
+| Category                 | Count | Description                                                                                       |
+| ------------------------ | ----- | ------------------------------------------------------------------------------------------------- |
+| Quick calibration checks | 13    | Standard/target calibration at various positions, sizes, and camera angles for both 100m and 400m |
+| Full-race static         | 10    | Complete races with static camera (standard + target + side view)                                 |
+| Full-race pan            | 4     | Panning camera during race (standard + target, 100m + 400m)                                       |
+| Full-race 400m zoom      | 2     | Zoom during 400m race                                                                             |
+| Full-race boom           | 2     | Boom up/down during 100m race                                                                     |
+| Full-race zoom/dolly     | 4     | Zoom and dolly during 100m race                                                                   |
 
 > **Note:** 100m zoom and dolly tests have relaxed tolerances (1.5s / 0.5s) due to PnP depth ambiguity on near-field cameras (z=36m). 400m tests at z=90m pass within 0.2s for all motion types.
 
@@ -214,16 +213,16 @@ track_ar/
 
 ## Key Technical Details
 
-| Component | Detail |
-|-----------|--------|
-| **GPU** | RTX 5070 Laptop (12 GB, sm_120) — PyTorch 2.12 nightly + CUDA 12.8 |
-| **YOLO pipeline** | ~115 fps at yolov8s; graceful fallback to `DummyDetector` |
-| **Camera tracking** | KLT at 640×360, 400 features, quality=0.005, min_distance=3px, redetect every 60 frames; USAC_MAGSAC (3.0 reproj) homography |
-| **PnP** | `solvePnPRansac` (ITERATIVE) with dense ~330-point tracking grid; no extrinsic guess to avoid local minima |
-| **400m track model** | IAAF standard: inner-edge radius 36.5 m, lane width 1.22 m, straight 84.39 m; per-lane curve arcs, stagger offsets, and finish distances |
-| **Race timer** | Video-timestamp-based (not wall clock); starts when ≥2 athletes pass 0.5 m; stops when all 8 lanes finished |
-| **Lane assignment** | Vectorized NumPy nearest-neighbor; 2-frame pending-track confirmation; NMS (IoU ≥ 0.85); track-region filtering for spectator rejection (100m); fallback re-acquisition with relaxed thresholds (400m) |
-| **Occlusion guard** | Places graphic anchors 2.0 m ahead (default), with behind (1.0 m) and lateral (0.4 m) fallbacks; bbox collision check ensures zero athlete overlap |
+| Component            | Detail                                                                                                                                                                                                 |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **GPU**              | RTX 5070 Laptop (12 GB, sm_120) — PyTorch 2.12 nightly + CUDA 12.8                                                                                                                                     |
+| **YOLO pipeline**    | ~115 fps at yolov8s; graceful fallback to `DummyDetector`                                                                                                                                              |
+| **Camera tracking**  | KLT at 640×360, 400 features, quality=0.005, min_distance=3px, redetect every 60 frames; USAC_MAGSAC (3.0 reproj) homography                                                                           |
+| **PnP**              | `solvePnPRansac` (ITERATIVE) with dense ~330-point tracking grid; no extrinsic guess to avoid local minima                                                                                             |
+| **400m track model** | IAAF standard: inner-edge radius 36.5 m, lane width 1.22 m, straight 84.39 m; per-lane curve arcs, stagger offsets, and finish distances                                                               |
+| **Race timer**       | Video-timestamp-based (not wall clock); starts when ≥2 athletes pass 0.5 m; stops when all 8 lanes finished                                                                                            |
+| **Lane assignment**  | Vectorized NumPy nearest-neighbor; 2-frame pending-track confirmation; NMS (IoU ≥ 0.85); track-region filtering for spectator rejection (100m); fallback re-acquisition with relaxed thresholds (400m) |
+| **Occlusion guard**  | Places graphic anchors 2.0 m ahead (default), with behind (1.0 m) and lateral (0.4 m) fallbacks; bbox collision check ensures zero athlete overlap                                                     |
 
 ---
 
