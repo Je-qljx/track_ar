@@ -144,7 +144,15 @@ class TrackARPipeline:
                 H_pnp = S @ H @ np.linalg.inv(S)
             pose_updated = self.projector.track_homography(H_pnp)
             if pose_updated:
-                self.assigner.set_H_calib_current(np.eye(3, dtype=np.float64))
+                # For 400m the assigner matches detection pixels against a
+                # calibration-frame grid via _current_to_calib. Setting H=I
+                # breaks that mapping for large pan angles → keep KLT H so
+                # _current_to_calib still maps current→calibration correctly.
+                # For 100m, unproject_to_ground uses PnP extrinsics directly
+                # on current-frame pixels, so H=I is fine (and preferred).
+                is_400m = getattr(self.geometry, '_model', None) is not None
+                if not is_400m:
+                    self.assigner.set_H_calib_current(np.eye(3, dtype=np.float64))
 
         if external_detections is not None:
             detections = external_detections

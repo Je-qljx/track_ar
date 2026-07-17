@@ -67,7 +67,7 @@ class LaneFeatureTracker:
         self._scale = self._max_width / w
         new_w = self._max_width
         new_h = int(h * self._scale)
-        return cv2.resize(gray, (new_w, new_h), interpolation=cv2.INTER_NEAREST)
+        return cv2.resize(gray, (new_w, new_h), interpolation=cv2.INTER_LINEAR)
 
     def _to_lr(self, u: float, v: float) -> tuple[float, float]:
         return u * self._scale, v * self._scale
