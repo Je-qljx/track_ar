@@ -280,7 +280,9 @@ class LaneAssigner:
             if px_d2 > max_px * max_px:
                 continue
             cu, cv = self._current_to_calib(du, dv)
-            dm, _ = self._find_dm_on_lane(cu, cv, athlete.lane)
+            dm, pixel_dist = self._find_dm_on_lane(cu, cv, athlete.lane)
+            if pixel_dist > 80:
+                continue
             if dm < 5.0 and prev_dm > self.geometry.length - 15.0:
                 dm = self.geometry.length
             dm_jump = abs(dm - prev_dm)
@@ -352,7 +354,7 @@ class LaneAssigner:
                     inter = (x2 - x1) * (y2 - y1)
                     aj_area = max((bj[2] - bj[0]), 1) * max((bj[3] - bj[1]), 1)
                     iou = inter / (ai_area + aj_area - inter + 1e-6)
-                    if iou > 0.85:
+                    if iou > 0.5:
                         keep[j] = False
             filtered_dets = [d for d, k in zip(filtered_dets, keep) if k]
 
@@ -415,7 +417,11 @@ class LaneAssigner:
                 cu, cv = self._current_to_calib(u, v)
                 if not self._is_in_track_region(cu, cv):
                     continue
-                _, dm, _ = self._find_lane_dm_from_image(cu, cv)
+                match_lane, dm, pixel_dist = self._find_lane_dm_from_image(cu, cv)
+                if pixel_dist > 80:
+                    continue
+                if not is_400m and match_lane != lane:
+                    continue
                 if is_400m and dm < 5.0 and athlete.d_m > self.geometry.length - 15.0:
                     dm = self.geometry.length
                 dm_jump = abs(dm - athlete.d_m)
