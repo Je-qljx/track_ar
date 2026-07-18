@@ -389,6 +389,32 @@ class LaneAssigner:
             result = self._match_existing_athlete(athlete, filtered_dets, frame_dt, dets_used)
             if result is not None:
                 det, dm = result
+                # Dedup: reject detection if too close to an already-matched athlete
+                # (YOLO partial-body box matching to wrong lane).
+                # Uses bottom-center proximity + bbox height ratio to distinguish
+                # "same person different box shape" from "different people at finish line".
+                if matched_lanes:
+                    bx, by = det.bottom_center
+                    bh = det.height
+                    is_dup = False
+                    for ml in matched_lanes:
+                        ma = self.athletes[ml]
+                        if ma.detection is None:
+                            continue
+                        mx, my = ma.detection.bottom_center
+                        dx = bx - mx
+                        dy = by - my
+                        if dx * dx + dy * dy > 6400:  # >80px → not same person
+                            continue
+                        mh = ma.detection.height
+                        h_min = min(bh, mh)
+                        h_max = max(bh, mh)
+                        if h_min / h_max > 0.55:  # similar height → finish-line clustering
+                            continue
+                        is_dup = True
+                        break
+                    if is_dup:
+                        continue
                 det_idx = next(i for i, d in enumerate(filtered_dets) if d is det)
                 dets_used.add(det_idx)
                 prev_dm = athlete.d_m
@@ -432,7 +458,7 @@ class LaneAssigner:
                 cu, cv = self._current_to_calib(u, v)
                 if not self._is_in_track_region(cu, cv):
                     continue
-                dm, fp_dist = self._find_dm_on_lane(cu, cv, lane)
+                _, dm, fp_dist = self._find_lane_dm_from_image(cu, cv)
                 if fp_dist > 150:
                     continue
                 # World-space off-track check (spectators behind fence, 100m only)
@@ -484,17 +510,26 @@ class LaneAssigner:
                 a.coast_count = 0
 
         # 2. Filter unused detections for new athletes (with duplicate guard)
-        # Suppress unused detections that map to the same lane as a matched athlete
-        matched_lanes_set = set(matched_lanes)
+        # Suppress unused detections whose bottom-center is very close to any
+        # matched detection (YOLO partial-body duplicate on same person).
+        matched_centers = []
+        for i in dets_used:
+            bc = filtered_dets[i].bottom_center
+            matched_centers.append(bc)
         unused_dets = []
         for i, d in enumerate(filtered_dets):
             if i in dets_used:
                 continue
             u_raw, v_raw = d.bottom_center
-            cu, cv = self._current_to_calib(u_raw, v_raw)
-            det_lane, det_dm, _ = self._find_lane_dm_from_image(cu, cv)
-            if det_lane in matched_lanes_set:
-                continue  # same lane as existing athlete → YOLO partial box duplicate
+            is_close_to_matched = False
+            for mu, mv in matched_centers:
+                du = u_raw - mu
+                dv = v_raw - mv
+                if du * du + dv * dv < 6400:  # 80px threshold (waist-to-foot can be ~60px)
+                    is_close_to_matched = True
+                    break
+            if is_close_to_matched:
+                continue
             conf_ok = d.confidence >= (self.MIN_CONFIDENCE_NEW if is_400m else self.MIN_CONFIDENCE)
             if not conf_ok:
                 continue
