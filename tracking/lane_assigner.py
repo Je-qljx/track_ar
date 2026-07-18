@@ -198,7 +198,11 @@ class LaneAssigner:
         if self.geometry._model is None:
             world = self.projector.unproject_to_ground(ImageCoord(u=u, v=v))
             lane = self.geometry.lane_from_y(world.y)
-            return lane, np.clip(world.x, 0.0, self.geometry.length), abs(world.y - self.geometry.lane_center_y(lane))
+            lane_y = self.geometry.lane_center_y(lane)
+            wc = WorldCoord(x=world.x, y=lane_y, z=0)
+            ic = self.projector.project(wc)
+            pixel_dist = np.sqrt((u - ic.u)**2 + (v - ic.v)**2)
+            return lane, np.clip(world.x, 0.0, self.geometry.length), pixel_dist
         best_lane = 1
         best_dm = 0.0
         best_dist = 1e9
@@ -216,7 +220,11 @@ class LaneAssigner:
     def _find_dm_on_lane(self, u: float, v: float, lane: int) -> tuple[float, float]:
         if self.geometry._model is None:
             world = self.projector.unproject_to_ground(ImageCoord(u=u, v=v))
-            return np.clip(world.x, 0.0, self.geometry.length), abs(world.y - self.geometry.lane_center_y(lane))
+            lane_y = self.geometry.lane_center_y(lane)
+            wc = WorldCoord(x=world.x, y=lane_y, z=0)
+            ic = self.projector.project(wc)
+            pixel_dist = np.sqrt((u - ic.u)**2 + (v - ic.v)**2)
+            return np.clip(world.x, 0.0, self.geometry.length), pixel_dist
         pts = self._img_pts[lane]
         d2 = (pts[:, 0] - u) ** 2 + (pts[:, 1] - v) ** 2
         min_idx = np.argmin(d2)
@@ -283,6 +291,12 @@ class LaneAssigner:
             dm, pixel_dist = self._find_dm_on_lane(cu, cv, athlete.lane)
             if pixel_dist > 150:
                 continue
+            # Reject off-track detections (100m only: world y must be within track bounds)
+            if self.geometry._model is None:
+                world = self.projector.unproject_to_ground(ImageCoord(u=cu, v=cv))
+                world_y_dist = abs(world.y - self.geometry.lane_center_y(athlete.lane))
+                if world_y_dist > 2.0:
+                    continue
             if dm < 5.0 and prev_dm > self.geometry.length - 15.0:
                 dm = self.geometry.length
             dm_jump = abs(dm - prev_dm)
@@ -421,6 +435,12 @@ class LaneAssigner:
                 _, dm, fp_dist = self._find_lane_dm_from_image(cu, cv)
                 if fp_dist > 150:
                     continue
+                # World-space off-track check (spectators behind fence, 100m only)
+                if self.geometry._model is None:
+                    world = self.projector.unproject_to_ground(ImageCoord(u=cu, v=cv))
+                    track_max_y = self.geometry.num_lanes * self.geometry.lane_width
+                    if world.y < -0.5 or world.y > track_max_y + 0.5:
+                        continue
                 if is_400m and dm < 5.0 and athlete.d_m > self.geometry.length - 15.0:
                     dm = self.geometry.length
                 dm_jump = abs(dm - athlete.d_m)
