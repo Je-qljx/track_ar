@@ -102,13 +102,14 @@ class TrackARApp:
         det_cfg = ttk.Frame(left)
         det_cfg.grid(row=15, column=0, sticky="ew", pady=2)
         ttk.Label(det_cfg, text="置信度:").pack(side=tk.LEFT)
-        self.detect_conf_var = tk.DoubleVar(value=0.35)
+        self.detect_conf_var = tk.DoubleVar(value=0.25)
         ttk.Scale(det_cfg, from_=0.1, to=0.9, orient="horizontal",
-                  variable=self.detect_conf_var, length=80).pack(side=tk.LEFT, padx=(2, 4))
-        self.detect_conf_label = ttk.Label(det_cfg, text="0.35", width=4)
+                  variable=self.detect_conf_var, length=80,
+                  command=self._on_conf_change).pack(side=tk.LEFT, padx=(2, 4))
+        self.detect_conf_label = ttk.Label(det_cfg, text="0.25", width=4)
         self.detect_conf_label.pack(side=tk.LEFT)
         ttk.Label(det_cfg, text=" 输入:").pack(side=tk.LEFT)
-        self.detect_imgsz_var = tk.IntVar(value=640)
+        self.detect_imgsz_var = tk.IntVar(value=1280)
         ttk.Spinbox(det_cfg, from_=320, to=1280, increment=320,
                     textvariable=self.detect_imgsz_var, width=5).pack(side=tk.LEFT)
 
@@ -218,6 +219,9 @@ class TrackARApp:
     def _on_fx_change(self, val):
         mm = int(float(val))
         self.fx_label.config(text=f"{mm}mm")
+
+    def _on_conf_change(self, val):
+        self.detect_conf_label.config(text=f"{float(val):.2f}")
 
     def _on_target_mode_toggle(self):
         global _use_target_names

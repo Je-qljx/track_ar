@@ -17,7 +17,7 @@ class DebugOverlay:
              frame_count: int = 0, fps: float = 0.0):
         if self.show_bboxes:
             for lane, athlete in athletes.items():
-                if athlete.detection:
+                if athlete.detection and athlete.frames_tracked > 2:
                     x1, y1, x2, y2 = map(int, athlete.detection.bbox)
                     cv2.rectangle(canvas, (x1, y1), (x2, y2), (0, 255, 0), 2)
                     cv2.putText(canvas, f"L{lane}#{athlete.athlete_id}",

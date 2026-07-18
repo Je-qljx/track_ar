@@ -303,7 +303,7 @@ class LaneAssigner:
                 best_det = det
                 best_dm = dm
         if best_det is not None:
-            use_strict = len(detections) > 15
+            use_strict = len(detections) > 15 and athlete.frames_tracked > 0
             if use_strict:
                 score_thresh = self.MAX_MATCH_SCORE * (1.0 + (1.0 - athlete.tracking_confidence) * 2.0)
                 if athlete.frames_tracked < 15:
