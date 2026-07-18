@@ -432,7 +432,7 @@ class LaneAssigner:
                 cu, cv = self._current_to_calib(u, v)
                 if not self._is_in_track_region(cu, cv):
                     continue
-                _, dm, fp_dist = self._find_lane_dm_from_image(cu, cv)
+                dm, fp_dist = self._find_dm_on_lane(cu, cv, lane)
                 if fp_dist > 150:
                     continue
                 # World-space off-track check (spectators behind fence, 100m only)
@@ -484,30 +484,21 @@ class LaneAssigner:
                 a.coast_count = 0
 
         # 2. Filter unused detections for new athletes (with duplicate guard)
-        # Suppress unused detections very close to any matched detection (same person, partial YOLO box)
-        matched_centers = []
-        for i in dets_used:
-            bc = filtered_dets[i].bottom_center
-            matched_centers.append(bc)
+        # Suppress unused detections that map to the same lane as a matched athlete
+        matched_lanes_set = set(matched_lanes)
         unused_dets = []
         for i, d in enumerate(filtered_dets):
             if i in dets_used:
                 continue
             u_raw, v_raw = d.bottom_center
-            is_close_to_matched = False
-            for mu, mv in matched_centers:
-                du = u_raw - mu
-                dv = v_raw - mv
-                if du * du + dv * dv < 1600:  # 40px threshold
-                    is_close_to_matched = True
-                    break
-            if is_close_to_matched:
-                continue
+            cu, cv = self._current_to_calib(u_raw, v_raw)
+            det_lane, det_dm, _ = self._find_lane_dm_from_image(cu, cv)
+            if det_lane in matched_lanes_set:
+                continue  # same lane as existing athlete → YOLO partial box duplicate
             conf_ok = d.confidence >= (self.MIN_CONFIDENCE_NEW if is_400m else self.MIN_CONFIDENCE)
             if not conf_ok:
                 continue
             is_dup = False
-            u_raw, v_raw = d.bottom_center
             for athlete in self.athletes.values():
                 pu, pv = self._predict_pixel_current(athlete)
                 dx = u_raw - pu
