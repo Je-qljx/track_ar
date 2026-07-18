@@ -34,3 +34,16 @@ output/
 .env
 venv/
 .venv/
+
+# Logs
+*.log
+
+# Windows
+Thumbs.db
+$RECYCLE.BIN/
+
+# Cython debug
+cython_debug/
+
+# Compiled extensions
+*.so
